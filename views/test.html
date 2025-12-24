@@ -1,0 +1,7 @@
+<h1>{{ title }}</h1>
+
+<p>{{ post.excerpt | truncate(50) }}</p>
+
+<p>Status: {{ enabled }}</p>
+
+<p>{{ missing | default("Fallback works") }}</p>
