@@ -5,6 +5,7 @@ namespace Twiglet;
 class Twiglet {
 
     protected array $filters = [];
+    protected array $filter_descriptions = [];
 
     public function __construct() {
         $this->register_default_filters();
@@ -17,6 +18,10 @@ class Twiglet {
 
         $template = file_get_contents($template_path);
 
+        return $this->render_string($template, $vars);
+    }
+
+    public function render_string(string $template, array $vars = []): string {
         return preg_replace_callback(
             '/{{\s*(.*?)\s*}}/',
             function ($matches) use ($vars) {
@@ -26,8 +31,22 @@ class Twiglet {
         );
     }
 
-    public function add_filter(string $name, callable $callback): void {
+    public function add_filter(string $name, callable $callback, string $description = ''): void {
         $this->filters[$name] = $callback;
+
+        if ($description !== '') {
+            $this->filter_descriptions[$name] = $description;
+        }
+    }
+
+    public function list_filters(): array {
+        $info = [];
+
+        foreach ($this->filters as $name => $callback) {
+            $info[$name] = $this->filter_descriptions[$name] ?? '';
+        }
+
+        return $info;
     }
 
     protected function evaluate_expression(string $expression, array $vars): string {
@@ -144,71 +163,107 @@ class Twiglet {
     }
 
     protected function register_default_filters(): void {
-        $this->filters['truncate'] = function ($value, int $length = 100, string $suffix = '…') {
-            $value = trim(strip_tags((string) $value));
+        $this->add_filter(
+            'truncate',
+            function ($value, int $length = 100, string $suffix = '…') {
+                $value = trim(strip_tags((string) $value));
 
-            if (function_exists('mb_strlen')) {
-                if (\mb_strlen($value) <= $length) {
+                if (function_exists('mb_strlen')) {
+                    if (\mb_strlen($value) <= $length) {
+                        return $value;
+                    }
+
+                    return \mb_substr($value, 0, $length) . $suffix;
+                }
+
+                // Fallback if mbstring is not available
+                if (strlen($value) <= $length) {
                     return $value;
                 }
 
-                return \mb_substr($value, 0, $length) . $suffix;
-            }
+                return substr($value, 0, $length) . $suffix;
+            },
+            'Shorten a string to a max length with an optional suffix.'
+        );
 
-            // Fallback if mbstring is not available
-            if (strlen($value) <= $length) {
-                return $value;
-            }
+        $this->add_filter(
+            'upper',
+            fn($v) => strtoupper((string) $v),
+            'Uppercase a string.'
+        );
+        $this->add_filter(
+            'lower',
+            fn($v) => strtolower((string) $v),
+            'Lowercase a string.'
+        );
+        $this->add_filter(
+            'length',
+            function ($v) {
+                if (is_string($v)) {
+                    return strlen($v);
+                }
 
-            return substr($value, 0, $length) . $suffix;
-        };
+                if (is_array($v)) {
+                    return count($v);
+                }
 
-        $this->filters['upper'] = fn($v) => strtoupper((string) $v);
-        $this->filters['lower'] = fn($v) => strtolower((string) $v);
-        $this->filters['length'] = function ($v) {
-            if (is_string($v)) {
-                return strlen($v);
-            }
+                if ($v instanceof \Countable) {
+                    return count($v);
+                }
 
-            if (is_array($v)) {
-                return count($v);
-            }
+                return 0;
+            },
+            'Length of a string or array.'
+        );
+        $this->add_filter(
+            'trim',
+            fn($v) => trim((string) $v),
+            'Trim whitespace from the ends of a string.'
+        );
+        $this->add_filter(
+            'title',
+            function ($v) {
+                $value = (string) $v;
 
-            if ($v instanceof \Countable) {
-                return count($v);
-            }
+                if (function_exists('mb_convert_case')) {
+                    return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
+                }
 
-            return 0;
-        };
-        $this->filters['trim'] = fn($v) => trim((string) $v);
-        $this->filters['title'] = function ($v) {
-            $value = (string) $v;
+                return ucwords(strtolower($value));
+            },
+            'Simple title case.'
+        );
+        $this->add_filter(
+            'split',
+            function ($value, string $delimiter = ' ', int $limit = 0) {
+                $value = (string) $value;
 
-            if (function_exists('mb_convert_case')) {
-                return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
-            }
+                if ($limit != 0) {
+                    return explode($delimiter, $value, $limit);
+                }
 
-            return ucwords(strtolower($value));
-        };
-        $this->filters['split'] = function ($value, string $delimiter = ' ', int $limit = 0) {
-            $value = (string) $value;
+                return explode($delimiter, $value);
+            },
+            'Split a string into an array.'
+        );
+        $this->add_filter(
+            'join',
+            function ($value, string $delimiter = '') {
+                if (is_array($value)) {
+                    return implode($delimiter, $value);
+                }
 
-            if ($limit != 0) {
-                return explode($delimiter, $value, $limit);
-            }
+                return (string) $value;
+            },
+            'Join an array into a string.'
+        );
 
-            return explode($delimiter, $value);
-        };
-        $this->filters['join'] = function ($value, string $delimiter = '') {
-            if (is_array($value)) {
-                return implode($delimiter, $value);
-            }
-
-            return (string) $value;
-        };
-
-        $this->filters['default'] = function ($value, $fallback = '') {
-            return $value === '' ? $fallback : $value;
-        };
+        $this->add_filter(
+            'default',
+            function ($value, $fallback = '') {
+                return $value === '' ? $fallback : $value;
+            },
+            'Fallback when the value is an empty string.'
+        );
     }
 }

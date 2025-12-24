@@ -4,7 +4,7 @@ use Twiglet\Twiglet;
 
 $twiglet = new Twiglet();
 
-$template = <<<HTML
+$template =  <<<HTML
 <p>{{ text | trim | upper }}</p>
 <p>{{ text | trim | lower }}</p>
 <p>{{ text | trim | length }}</p>
@@ -15,15 +15,12 @@ $template = <<<HTML
 <p>{{ csv | split(",") | length }}</p>
 HTML;
 
-file_put_contents(__DIR__ . '/_filters.html', $template);
-
-$output = $twiglet->render(__DIR__ . '/_filters.html', [
+$output = $twiglet->render_string($template, [
     'text' => '  twiglet is tiny  ',
     'list' => ['a', 'b', 'c'],
     'csv' => 'red,green,blue',
 ]);
 
-unlink(__DIR__ . '/_filters.html');
 
 $pass = true;
 

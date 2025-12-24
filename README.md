@@ -9,7 +9,6 @@ php test.php
 php tests/run.php
 ```
 
-## Basic usage
 
 ```php
 <?php
@@ -27,6 +26,17 @@ echo $twiglet->render(__DIR__ . '/views/test.html', [
 ]);
 ```
 
+## String templates
+
+```php
+$template = "<p>{{ title }}</p><p>{{ text | upper }}</p>";
+
+echo $twiglet->render_string($template, [
+    'title' => 'Hello',
+    'text' => 'twiglet',
+]);
+```
+
 ## Variables and dot notation
 
 ```twig
@@ -41,10 +51,10 @@ Missing keys render as an empty string.
 
 - truncate(length=100, suffix defaults to the ellipsis character)
 - default(fallback='')
-- upper
-- lower
+- upper (uppercase a string)
+- lower (lowercase a string)
 - length (strings and arrays)
-- trim
+- trim (trim whitespace)
 - title (simple title case)
 - split(delimiter=' ', limit=0)
 - join(delimiter='')
@@ -59,12 +69,31 @@ Missing keys render as an empty string.
 {{ csv | split(",") | length }}
 ```
 
+## Filter list (API)
+
+```php
+$filters = $twiglet->list_filters();
+print_r($filters);
+```
+
+Example output:
+
+```
+Array
+(
+    [upper] => Uppercase a string.
+    [lower] => Lowercase a string.
+    [length] => Length of a string or array.
+    ...
+)
+```
+
 ## Custom filters
 
 ```php
 $twiglet->add_filter('wrap', function ($value, $left = '[', $right = ']') {
     return $left . (string) $value . $right;
-});
+}, 'Wrap a value with left and right strings.');
 ```
 
 Template:
@@ -81,7 +110,8 @@ php tests/run.php
 
 ## Limitations
 
-- No loops or conditionals
+- No loops or conditionals (no if/elif/else or for/foreach)
+- No Jinja/Twig blocks or tags
 - No auto-escaping
 - Filters use comma-separated args
 
@@ -93,3 +123,4 @@ php tests/run.php
 - json
 - date
 - number_format
+- reverse
