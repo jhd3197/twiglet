@@ -9,6 +9,25 @@ php test.php
 php tests/run.php
 ```
 
+## Basic usage
+
+```php
+
+<?php
+
+use Twiglet\Twiglet;
+
+$twiglet = new Twiglet();
+
+$template = "<p>{{ title }}</p><p>{{ text | upper }}</p>";
+
+echo $twiglet->render_string($template, [
+    'title' => 'Hello',
+    'text' => 'twiglet',
+]);
+```
+
+## Basic usage (file)
 
 ```php
 <?php
@@ -23,17 +42,6 @@ echo $twiglet->render(__DIR__ . '/views/test.html', [
     'post' => [
         'title' => 'Twiglet',
     ],
-]);
-```
-
-## String templates
-
-```php
-$template = "<p>{{ title }}</p><p>{{ text | upper }}</p>";
-
-echo $twiglet->render_string($template, [
-    'title' => 'Hello',
-    'text' => 'twiglet',
 ]);
 ```
 
